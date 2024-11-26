@@ -85,6 +85,7 @@ function findWordAfterKeyword(text, keyword) {
 const url = 'https://1drv.ms/u/s!Agru3zUcrjVogq4cHgJfXfG8TG6Zmw?embed=1';
 
 const response = await fetch(url, {
+    mode: 'no-cors',
     headers: {
         'Accept': 'application/json',
     },
@@ -92,4 +93,6 @@ const response = await fetch(url, {
 
 const text = await response.text();
 
-console.log(findWordAfterKeyword(text,"\"name\":"));
+console.log(text);
+
+console.log(text);
