@@ -5,21 +5,27 @@ class Puissance4 {
         this.cols = cols;
         this.board = Array.from({ length: rows }, () => Array(cols).fill(null));
         this.currentPlayer = 'R';
+        this.lastMove = -1;
     }
 
     dropDisc(col) {
-        if (col < 0 || col >= this.cols) {
+        if (col == -1){
+            return false;
+        }
+        if (col < -1 || col >= this.cols) {
             throw new Error('Invalid column');
         }
 
         for (let row = this.rows - 1; row >= 0; row--) {
             if (this.board[row][col] === null) {
                 this.board[row][col] = this.currentPlayer;
+                this.lastMove = row*this.cols+col;
                 if (this.checkWin(row, col)) {
                     console.log(`${this.currentPlayer} wins!`);
+                    return true;
                 }
                 this.currentPlayer = this.currentPlayer === 'R' ? 'Y' : 'R';
-                return;
+                return false;
             }
         }
 
@@ -65,6 +71,10 @@ class Puissance4 {
         return count;
     }
 
+    namePlayer(){
+        return this.currentPlayer;
+    }
+
     printBoard() {
         console.log(this.board.map(row => row.map(cell => cell || '.').join(' ')).join('\n'));
     }
@@ -72,27 +82,142 @@ class Puissance4 {
 
 const jeu = new Puissance4();
 
-            
 
 
-function findWordAfterKeyword(text, keyword) {
-    const regex = new RegExp(`\\b${keyword}\\b\\s+(\\w+)`);
-    const match = text.match(regex);
-    return match ? match[1] : null;
+
+
+
+async function send(cell,finish,color)
+{
+    const url = 'https://prod-10.francecentral.logic.azure.com:443/workflows/ed82e312a7504228bbbabace9b6cbffd/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=0kqkJtZoSFt_aKYiXewoo3hODcVDauJ0-keWO1EbIOQ';
+
+    const data = `{
+    "type": "message",
+    "attachments": [
+        {
+        "contentType": "Action",
+        "content": {
+            "type": "${finish ? 'end' : 'continue'}",
+            "version": "1.0",
+            "body": [
+            {
+                "type": "${cell}"
+            },
+            {
+                "type": "${color}"
+            }
+            ]
+        }
+        }
+    ]
+    }`;
+
+    await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        },
+        body: data,
+    });
+
+
+    window.location.replace('https://github.com/Shayneintsu/Connect4.github.io/blob/main/README.md');
 }
 
 
-const url = 'https://1drv.ms/u/s!Agru3zUcrjVogq4cHgJfXfG8TG6Zmw?embed=1';
+function getNthMatch(text, regex, n) {
+    let match;
+    let count = 0;
+    while ((match = regex.exec(text)) !== null) {
+        count++;
+        if (count === n) {
+            return match[1];
+        }
+    }
+    return null;
+}
 
-const response = await fetch(url, {
-    mode: 'no-cors',
-    headers: {
-        'Accept': 'application/json',
-    },
-});
 
-const text = await response.text();
 
-console.log(text);
+const currentUrl = window.location.href;
+const parsedUrl = new URL(currentUrl);
+const params = new URLSearchParams(parsedUrl.search);
 
-console.log(text);
+const param = params.get('cell');
+if(param == "0")
+{
+    window.location.replace('https://github.com/Shayneintsu/Connect4.github.io/blob/main/README.md');
+}
+else if(param == "-1")
+{
+    send('0',true,'null');
+}
+else
+{
+    const paramint = parseInt(param,10);
+
+    if (paramint > 0 && paramint < 8)
+    {
+
+        const regex = /"name":"([^"]*)"/g;
+
+        const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+        const targetUrl = 'https://1drv.ms/u/s!Agru3zUcrjVogq4cHgJfXfG8TG6Zmw?embed=1';
+        const url = proxyUrl + targetUrl;
+
+        (async () => {
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                    }
+                });
+        
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+        
+                const data = await response.text();
+                
+        
+                var pastmove = getNthMatch(data, regex, 2)
+                const intArray = pastmove.split('');
+                for (const char of intArray) { 
+                    const int = parseInt(char, 10);
+                    if (jeu.dropDisc(int-1))
+                    {
+                        throw new Error('Game already finished!');
+                    }
+                    
+                }
+        
+                
+                try 
+                {
+                    const player = jeu.namePlayer();
+                    const win = jeu.dropDisc(paramint-1);
+                    const move = jeu.lastMove;
+                    jeu.printBoard();
+                    send(move,win,player);
+                    
+                }
+                catch (error)
+                {
+                    console.log(error);
+                }
+                
+        
+        
+            } catch (error) {
+                console.error('Fetch error:', error);
+            }
+        })();
+
+
+    }
+
+}
+
+
